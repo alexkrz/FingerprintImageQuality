@@ -1,2 +1,10 @@
+defaults:
+  - base_config
+  - _self_
+
 data_dir: ${oc.env:DATASET_DIR}/CASIA-FingerprintV5_R1/CASIA-FingerprintV5_R1
+file_ext: .bmp
 results_dir: ${oc.env:EXPERIMENT_DIR}/MiDeCon
+experiment_name: CASIA-CoarseNet
+cuda_visible_devices:
+  - 7

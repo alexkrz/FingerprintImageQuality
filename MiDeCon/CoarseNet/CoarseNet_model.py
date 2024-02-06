@@ -16,7 +16,6 @@ from __future__ import division
 
 from time import time
 from datetime import datetime
-from CoarseNet_utils import *
 from scipy import misc, ndimage, signal, sparse, io
 import imageio.v2 as imageio
 from PIL import Image
@@ -25,6 +24,7 @@ import cv2
 import sys,os
 sys.path.append(os.path.realpath('../FineNet'))
 sys.path.append(os.path.abspath('../'))
+from CoarseNet.CoarseNet_utils import *
 from FineNet.FineNet_model import FineNetmodel
 
 from keras.models import Model
@@ -41,8 +41,8 @@ from keras.utils import plot_model
 
 import tensorflow as tf
 
-from MinutiaeNet_utils import *
-from LossFunctions import *
+from CoarseNet.MinutiaeNet_utils import *
+from CoarseNet.LossFunctions import *
 
 
 def conv_bn(bottom, w_size, name, strides=(1,1), dilation_rate=(1,1)):
@@ -800,7 +800,7 @@ def inference(deploy_set, output_dir, model_path, FineNet_path=None, set_name=No
 
     logging.info("Predicting %s:" % (set_name))
 
-    _, img_name = get_files_in_folder(deploy_set+ 'img_files/', file_ext)
+    _, img_name = get_files_in_folder(deploy_set, file_ext)
     print(deploy_set)
 
     # ====== Load FineNet to verify
@@ -820,7 +820,7 @@ def inference(deploy_set, output_dir, model_path, FineNet_path=None, set_name=No
     for i in range(0, len(img_name)):
         print(i)
 
-        image = imageio.imread(deploy_set + 'img_files/'+ img_name[i] + file_ext, pilmode='L')  # / 255.0
+        image = imageio.imread(deploy_set + '/'+ img_name[i] + file_ext, pilmode='L')  # / 255.0
 
         img_size = image.shape
         img_size = np.array(img_size, dtype=np.int32) // 8 * 8

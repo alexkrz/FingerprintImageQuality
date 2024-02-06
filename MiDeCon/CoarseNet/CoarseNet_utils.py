@@ -14,7 +14,6 @@
 
 from functools import partial, reduce
 from multiprocessing import Pool
-from MinutiaeNet_utils import *
 from scipy import misc, ndimage, signal, sparse
 import numpy as np
 import imageio.v2 as imageio
@@ -24,6 +23,8 @@ from keras.models import Model
 from keras.layers import Input
 from keras.layers.core import Lambda
 import tensorflow as tf
+
+from CoarseNet.MinutiaeNet_utils import *
 
 # training coarsenet or not
 train_coarsenet = 0
