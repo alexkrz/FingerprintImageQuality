@@ -1,0 +1,2 @@
+data_dir: ${oc.env:DATASET_DIR}/CASIA-FingerprintV5_R1/CASIA-FingerprintV5_R1
+results_dir: ${oc.env:EXPERIMENT_DIR}/MiDeCon

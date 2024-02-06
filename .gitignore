@@ -12,3 +12,4 @@ MiDeCon/output_FineNet/*
 Data/fingerprint_qualityscores/
 Data/minutiae_qualityscores/
 MiDeCon/output_CoarseNet/*
+MiDeCon/outputs/*
