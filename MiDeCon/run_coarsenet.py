@@ -1,10 +1,11 @@
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Optional
 
 import hydra
 from hydra.core.config_store import ConfigStore
-from omegaconf import DictConfig, OmegaConf
+from omegaconf import DictConfig, ListConfig, OmegaConf
 
 os.environ["KERAS_BACKEND"] = "tensorflow"
 
@@ -31,7 +32,7 @@ class Config:
     results_dir: str = ""
     experiment_name: str = "Unknown"
     file_ext: str = ".bmp"
-    cuda_visible_devices: list = field(default_factory=list)
+    cuda_visible_devices: Optional[list] = None
 
 
 cs = ConfigStore.instance()
@@ -46,10 +47,13 @@ def main(cfg: DictConfig) -> None:
     assert data_dir.exists()
     assert results_dir.exists()
     gpu_list = cfg["cuda_visible_devices"]
-    if len(gpu_list) == 1:
-        gpu_devices = str(gpu_list[0])
+    if isinstance(gpu_list, (list, ListConfig)):
+        if len(gpu_list) == 1:
+            gpu_devices = str(gpu_list[0])
+        else:
+            gpu_devices = str(gpu_list)
     else:
-        gpu_devices = str(gpu_list)
+        gpu_devices = ""
     os.environ["CUDA_VISIBLE_DEVICES"] = gpu_devices
     # print(os.environ["CUDA_VISIBLE_DEVICES"])
 
