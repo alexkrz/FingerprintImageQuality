@@ -5,12 +5,10 @@ from typing import Optional
 
 import hydra
 from hydra.core.config_store import ConfigStore
+from hydra.core.hydra_config import HydraConfig
 from omegaconf import DictConfig, ListConfig, OmegaConf
 
 os.environ["KERAS_BACKEND"] = "tensorflow"
-
-from datetime import datetime
-
 import tensorflow as tf
 from keras import backend as K
 
@@ -29,8 +27,6 @@ def get_available_gpus():
 @dataclass
 class Config:
     data_dir: str = ""
-    results_dir: str = ""
-    experiment_name: str = "Unknown"
     file_ext: str = ".bmp"
     cuda_visible_devices: Optional[list] = None
 
@@ -39,13 +35,12 @@ cs = ConfigStore.instance()
 cs.store(name="base_config", node=Config)
 
 
-@hydra.main(version_base="1.3", config_path="configs")
+@hydra.main(version_base=None, config_path="configs")
 def main(cfg: DictConfig) -> None:
     # print(cfg)
     data_dir = Path(cfg["data_dir"])
-    results_dir = Path(cfg["results_dir"])
     assert data_dir.exists()
-    assert results_dir.exists()
+    output_dir = Path(HydraConfig.get().runtime.output_dir)
     gpu_list = cfg["cuda_visible_devices"]
     if isinstance(gpu_list, (list, ListConfig)):
         if len(gpu_list) == 1:
@@ -57,6 +52,8 @@ def main(cfg: DictConfig) -> None:
     os.environ["CUDA_VISIBLE_DEVICES"] = gpu_devices
     # print(os.environ["CUDA_VISIBLE_DEVICES"])
 
+    print(f"Hydra output directory  : {output_dir}")
+
     tf_config = tf.ConfigProto(gpu_options=tf.GPUOptions(allow_growth=True))
     sess = tf.Session(config=tf_config)
     K.set_session(sess)
@@ -64,10 +61,9 @@ def main(cfg: DictConfig) -> None:
     pretrain_dir = "Models/CoarseNet.h5"
     FineNet_dir = "output_FineNet/FineNet_dropout/FineNet__dropout__model.h5"
 
-    output_dir = results_dir / cfg["experiment_name"] / datetime.now().strftime("%Y%m%d-%H%M%S")
-    output_dir.mkdir(parents=True, exist_ok=False)
+    # output_dir = results_dir / cfg["experiment_name"] / datetime.now().strftime("%Y%m%d-%H%M%S")
+    # output_dir.mkdir(parents=True, exist_ok=False)
 
-    logging = init_log(output_dir)
     inference(
         deploy_set=str(data_dir),
         output_dir=str(output_dir),
