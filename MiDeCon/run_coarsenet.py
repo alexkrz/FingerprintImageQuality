@@ -6,7 +6,7 @@ from typing import Optional
 import hydra
 from hydra.core.config_store import ConfigStore
 from hydra.core.hydra_config import HydraConfig
-from omegaconf import DictConfig, ListConfig, OmegaConf
+from omegaconf import MISSING, DictConfig, ListConfig, OmegaConf
 
 os.environ["KERAS_BACKEND"] = "tensorflow"
 import tensorflow as tf
@@ -26,7 +26,7 @@ def get_available_gpus():
 
 @dataclass
 class Config:
-    data_dir: str = ""
+    data_dir: str = MISSING
     file_ext: str = ".bmp"
     cuda_visible_devices: Optional[list] = None
 
@@ -35,7 +35,7 @@ cs = ConfigStore.instance()
 cs.store(name="base_config", node=Config)
 
 
-@hydra.main(version_base=None, config_path="configs")
+@hydra.main(version_base=None, config_path="configs", config_name="casia-coarsenet")
 def main(cfg: DictConfig) -> None:
     # print(cfg)
     data_dir = Path(cfg["data_dir"])
