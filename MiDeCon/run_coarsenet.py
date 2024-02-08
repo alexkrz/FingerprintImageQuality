@@ -1,7 +1,7 @@
 import os
+from datetime import datetime
 from pathlib import Path
 from typing import Optional
-from datetime import datetime
 
 os.environ["KERAS_BACKEND"] = "tensorflow"
 import tensorflow as tf
@@ -25,7 +25,8 @@ def main(
     cuda_visible_devices: Optional[list] = None,
     file_ext: str = ".bmp",
 ) -> None:
-    # print(cfg)
+    assert data_dir.exists()
+    assert output_dir.exists()
     if isinstance(cuda_visible_devices, list):
         if len(cuda_visible_devices) == 1:
             gpu_devices = str(cuda_visible_devices[0])
@@ -54,12 +55,12 @@ def main(
 
 
 if __name__ == "__main__":
-    from jsonargparse import ArgumentParser, ActionConfigFile
+    from jsonargparse import ActionConfigFile, ArgumentParser
 
     parser = ArgumentParser(parser_mode="omegaconf", description="Feature Extraction")
     parser.add_argument("--config", action=ActionConfigFile)
-    parser.add_argument("--data_dir", type=str, required=True)
-    parser.add_argument("--results_dir", type=str, required=True)
+    parser.add_argument("--data_dir", type=Path, required=True)
+    parser.add_argument("--results_dir", type=Path, required=True)
     parser.add_argument("--file_ext", type=str, default=".bmp")
     parser.add_argument("--experiment_name", type=str, default="run_coarsenet")
     parser.add_argument("--cuda_visible_devices", type=Optional[list], default=None)
@@ -68,17 +69,18 @@ if __name__ == "__main__":
 
     # Adjust config
     cfg.pop("config")
-    data_dir = Path(cfg["data_dir"])
-    results_dir = Path(cfg["results_dir"])
-    assert data_dir.exists()
-    assert results_dir.exists()
-    output_dir = Path(
-        results_dir / cfg["experiment_name"] / datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    assert cfg["results_dir"].exists()
+    cfg_out_dir = Path(
+        cfg["results_dir"] / cfg["experiment_name"] / datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     )
-    output_dir.mkdir(parents=True, exist_ok=False)
+    cfg_out_dir.mkdir(parents=True, exist_ok=False)
     # Save config to output_dir
-    parser.save(cfg=cfg, path=str(output_dir / "config.yaml"), overwrite=True)
+    parser.save(cfg=cfg, path=str(cfg_out_dir / "config.yaml"), overwrite=True)
     # Write log file to output_dir
-    init_log(str(output_dir))
+    cfg.pop("results_dir")
+    cfg.pop("experiment_name")
+    cfg["output_dir"] = cfg_out_dir
+    # Write log file to output_dir
+    init_log(str(cfg["output_dir"]))
 
-    main(data_dir, output_dir, cfg["cuda_visible_devices"], cfg["file_ext"])
+    main(**cfg)
