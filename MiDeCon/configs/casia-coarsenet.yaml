@@ -1,14 +1,6 @@
-hydra:
-  job:
-    name: CASIA-CoarseNet  # Job name is typically derived from the python script name
-  run:
-    dir: ${oc.env:EXPERIMENT_DIR}/MiDeCon/${hydra.job.name}/${now:%Y-%m-%d_%H-%M-%S}
-
-defaults:
-  - base_config  # Use structured config "base_config" as schema for config args
-  - _self_  # Need to put _self_ to properly overwrite config args
-
 data_dir: ${oc.env:DATASET_DIR}/CASIA-FingerprintV5_R1/CASIA-FingerprintV5_R1
 file_ext: .bmp
+results_dir: ${oc.env:EXPERIMENT_DIR}/MiDeCon
+experiment_name: CASIA-CoarseNet
 cuda_visible_devices:
   - 7

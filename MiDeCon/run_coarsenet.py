@@ -1,12 +1,7 @@
 import os
-from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
-
-import hydra
-from hydra.core.config_store import ConfigStore
-from hydra.core.hydra_config import HydraConfig
-from omegaconf import MISSING, DictConfig, ListConfig, OmegaConf
+from datetime import datetime
 
 os.environ["KERAS_BACKEND"] = "tensorflow"
 import tensorflow as tf
@@ -24,35 +19,22 @@ def get_available_gpus():
     return [x.name for x in local_device_protos]
 
 
-@dataclass
-class Config:
-    data_dir: str = MISSING
-    file_ext: str = ".bmp"
-    cuda_visible_devices: Optional[list] = None
-
-
-cs = ConfigStore.instance()
-cs.store(name="base_config", node=Config)
-
-
-@hydra.main(version_base=None, config_path="configs", config_name="casia-coarsenet")
-def main(cfg: DictConfig) -> None:
+def main(
+    data_dir: Path,
+    output_dir: Path,
+    cuda_visible_devices: Optional[list],
+    file_ext: str,
+) -> None:
     # print(cfg)
-    data_dir = Path(cfg["data_dir"])
-    assert data_dir.exists()
-    output_dir = Path(HydraConfig.get().runtime.output_dir)
-    gpu_list = cfg["cuda_visible_devices"]
-    if isinstance(gpu_list, (list, ListConfig)):
-        if len(gpu_list) == 1:
-            gpu_devices = str(gpu_list[0])
+    if isinstance(cuda_visible_devices, list):
+        if len(cuda_visible_devices) == 1:
+            gpu_devices = str(cuda_visible_devices[0])
         else:
-            gpu_devices = str(gpu_list)
+            gpu_devices = str(cuda_visible_devices)
     else:
         gpu_devices = ""
     os.environ["CUDA_VISIBLE_DEVICES"] = gpu_devices
     # print(os.environ["CUDA_VISIBLE_DEVICES"])
-
-    print(f"Hydra output directory  : {output_dir}")
 
     tf_config = tf.ConfigProto(gpu_options=tf.GPUOptions(allow_growth=True))
     sess = tf.Session(config=tf_config)
@@ -61,18 +43,39 @@ def main(cfg: DictConfig) -> None:
     pretrain_dir = "Models/CoarseNet.h5"
     FineNet_dir = "output_FineNet/FineNet_dropout/FineNet__dropout__model.h5"
 
-    # output_dir = results_dir / cfg["experiment_name"] / datetime.now().strftime("%Y%m%d-%H%M%S")
-    # output_dir.mkdir(parents=True, exist_ok=False)
-
     inference(
         deploy_set=str(data_dir),
         output_dir=str(output_dir),
         model_path=pretrain_dir,
         FineNet_path=FineNet_dir,
-        file_ext=cfg["file_ext"],
+        file_ext=file_ext,
         isHavingFineNet=False,
     )
 
 
 if __name__ == "__main__":
-    main()
+    from jsonargparse import ArgumentParser, ActionConfigFile
+
+    parser = ArgumentParser(parser_mode="omegaconf", description="Feature Extraction")
+    parser.add_argument("--config", action=ActionConfigFile)
+    parser.add_argument("--data_dir", type=str, required=True)
+    parser.add_argument("--results_dir", type=str, required=True)
+    parser.add_argument("--file_ext", type=str, default=".bmp")
+    parser.add_argument("--experiment_name", type=str, default="run_coarsenet")
+    parser.add_argument("--cuda_visible_devices", type=Optional[list], default=None)
+    args = parser.parse_args()
+    cfg = vars(args)
+
+    # Adjust config
+    cfg.pop("config")
+    data_dir = Path(cfg["data_dir"])
+    results_dir = Path(cfg["results_dir"])
+    assert data_dir.exists()
+    assert results_dir.exists()
+    output_dir = Path(
+        results_dir / cfg["experiment_name"] / datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    )
+    output_dir.mkdir(parents=True, exist_ok=False)
+    parser.save(cfg=cfg, path=str(output_dir / "config.yaml"), overwrite=True)
+
+    main(data_dir, output_dir, cfg["cuda_visible_devices"], cfg["file_ext"])
