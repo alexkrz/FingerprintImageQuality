@@ -22,7 +22,7 @@ def re_mkdir(path):
     os.makedirs(path)
 
 def init_log(output_dir):
-    re_mkdir(output_dir)
+    # re_mkdir(output_dir)  # Do not re-make dirs
     logging.basicConfig(level=logging.DEBUG,
         format='%(asctime)s %(message)s',
         datefmt='%Y%m%d-%H:%M:%S',

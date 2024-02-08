@@ -1,0 +1,6 @@
+data_dir: ${oc.env:DATASET_DIR}/CASIA-FingerprintV5_R1/CASIA-FingerprintV5_R1
+file_ext: .bmp
+minu_dir: ${oc.env:DATASET_DIR}/CASIA-FingerprintV5_R1/CoarseNet-Minutiae
+results_dir: ${oc.env:EXPERIMENT_DIR}/MiDeCon
+experiment_name: CASIA-MiDeCon
+cuda_visible_devices: null

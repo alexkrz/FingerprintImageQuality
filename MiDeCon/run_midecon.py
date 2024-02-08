@@ -6,26 +6,52 @@ from datetime import datetime
 os.environ["KERAS_BACKEND"] = "tensorflow"
 import tensorflow as tf
 from keras import backend as K
+from keras.models import Model
+from keras.layers.core import Dropout
+from keras.optimizers import Adam
 
 # Suppress tensorflow warnings for now
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
-from CoarseNet.CoarseNet_model import inference
 from CoarseNet.MinutiaeNet_utils import init_log
+from FineNet.FineNet_model import FineNetmodel
 
 
-def get_available_gpus():
-    local_device_protos = tf.config.experimental.list_physical_devices("GPU")
-    return [x.name for x in local_device_protos]
+def generate_minu_preds():
+    minus_arr = []
+    for nn in range(100):
+        minus_arr.append(str(-1))
+
+    # Load FineNet to verify
+    model = FineNetmodel(num_classes=2, pretrained_path=None, input_shape=(224, 224, 3))
+
+    dense = model.layers[-1]
+    model_out = Model(model.input, model.layers[-2].output)
+    model_out.summary()
+    x = model_out.output
+    dropout = Dropout(rate=0.3)(x, training=True)
+    prediction = dense(dropout)
+    model_FineNet = Model(inputs=model.input, outputs=prediction)
+
+    model_FineNet.summary()
+
+    # Load pre-trained FineNet weights
+    FineNet_path = "output_FineNet/FineNet_dropout/FineNet__dropout__model.h5"
+    model_FineNet.load_weights(FineNet_path)
+    print("Pretrained FineNet loaded.")
+
+    model_FineNet.compile(
+        loss="categorical_crossentropy", optimizer=Adam(lr=0), metrics=["accuracy"]
+    )
 
 
 def main(
     data_dir: Path,
+    minu_dir: Path,
     output_dir: Path,
     cuda_visible_devices: Optional[list] = None,
     file_ext: str = ".bmp",
-) -> None:
-    # print(cfg)
+):
     if isinstance(cuda_visible_devices, list):
         if len(cuda_visible_devices) == 1:
             gpu_devices = str(cuda_visible_devices[0])
@@ -34,23 +60,12 @@ def main(
     else:
         gpu_devices = ""
     os.environ["CUDA_VISIBLE_DEVICES"] = gpu_devices
-    # print(os.environ["CUDA_VISIBLE_DEVICES"])
 
     tf_config = tf.ConfigProto(gpu_options=tf.GPUOptions(allow_growth=True))
     sess = tf.Session(config=tf_config)
     K.set_session(sess)
 
-    pretrain_dir = "Models/CoarseNet.h5"
-    FineNet_dir = "output_FineNet/FineNet_dropout/FineNet__dropout__model.h5"
-
-    inference(
-        deploy_set=str(data_dir),
-        output_dir=str(output_dir),
-        model_path=pretrain_dir,
-        FineNet_path=FineNet_dir,
-        file_ext=file_ext,
-        isHavingFineNet=False,
-    )
+    generate_minu_preds()
 
 
 if __name__ == "__main__":
@@ -59,9 +74,10 @@ if __name__ == "__main__":
     parser = ArgumentParser(parser_mode="omegaconf", description="Feature Extraction")
     parser.add_argument("--config", action=ActionConfigFile)
     parser.add_argument("--data_dir", type=str, required=True)
+    parser.add_argument("--minu_dir", type=str, required=True)
     parser.add_argument("--results_dir", type=str, required=True)
     parser.add_argument("--file_ext", type=str, default=".bmp")
-    parser.add_argument("--experiment_name", type=str, default="run_coarsenet")
+    parser.add_argument("--experiment_name", type=str, default="run_midecon")
     parser.add_argument("--cuda_visible_devices", type=Optional[list], default=None)
     args = parser.parse_args()
     cfg = vars(args)
@@ -69,8 +85,10 @@ if __name__ == "__main__":
     # Adjust config
     cfg.pop("config")
     data_dir = Path(cfg["data_dir"])
+    minu_dir = Path(cfg["minu_dir"])
     results_dir = Path(cfg["results_dir"])
     assert data_dir.exists()
+    assert minu_dir.exists()
     assert results_dir.exists()
     output_dir = Path(
         results_dir / cfg["experiment_name"] / datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -81,4 +99,4 @@ if __name__ == "__main__":
     # Write log file to output_dir
     init_log(str(output_dir))
 
-    main(data_dir, output_dir, cfg["cuda_visible_devices"], cfg["file_ext"])
+    main()
