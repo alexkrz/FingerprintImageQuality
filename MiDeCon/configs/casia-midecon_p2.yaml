@@ -1,0 +1,5 @@
+minu_dir: ${oc.env:DATASET_DIR}/CASIA-FingerprintV5_R1/MiDeCon-CoarseNet-Minutiae
+minu_conf_dir: ${oc.env:DATASET_DIR}/CASIA-FingerprintV5_R1/MiDeCon-Minutiae-Confidences
+results_dir: ${oc.env:EXPERIMENT_DIR}/MiDeCon
+experiment_name: CASIA-MiDeCon-P2
+alpha: 0.5
